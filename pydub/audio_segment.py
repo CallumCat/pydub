@@ -3,7 +3,7 @@ from __future__ import division
 import array
 import os
 import subprocess
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryFile, NamedTemporaryFile
 import wave
 import sys
 import struct
@@ -643,6 +643,7 @@ class AudioSegment(object):
 
     @classmethod
     def from_file(cls, file, format=None, codec=None, parameters=None, start_second=None, duration=None, **kwargs):
+        print("Folfs are cute "+str(cls)+" "+str(file)+" "+str(format)+" "+str(codec)+" "+str(parameters)+" "+str(start_second))
         orig_file = file
         try:
             filename = fsdecode(file)
@@ -966,20 +967,19 @@ class AudioSegment(object):
         log_subprocess_output(p_out)
         log_subprocess_output(p_err)
 
-        try:
-            if p.returncode != 0:
-                raise CouldntEncodeError(
-                    "Encoding failed. ffmpeg/avlib returned error code: {0}\n\nCommand:{1}\n\nOutput from ffmpeg/avlib:\n\n{2}".format(
-                        p.returncode, conversion_command, p_err.decode(errors='ignore') ))
+        if p.returncode != 0:
+            raise CouldntEncodeError(
+                "Encoding failed. ffmpeg/avlib returned error code: {0}\n\nCommand:{1}\n\nOutput from ffmpeg/avlib:\n\n{2}".format(
+                    p.returncode, conversion_command, p_err.decode(errors='ignore') ))
 
-            output.seek(0)
-            out_f.write(output.read())
+        output.seek(0)
+        out_f.write(output.read())
 
-        finally:
-            data.close()
-            output.close()
-            os.unlink(data.name)
-            os.unlink(output.name)
+        data.close()
+        output.close()
+
+        os.unlink(data.name)
+        os.unlink(output.name)
 
         out_f.seek(0)
         return out_f
@@ -1265,7 +1265,7 @@ class AudioSegment(object):
         xf = seg1[-crossfade:].fade(to_gain=-120, start=0, end=float('inf'))
         xf *= seg2[:crossfade].fade(from_gain=-120, start=0, end=float('inf'))
 
-        output = BytesIO()
+        output = TemporaryFile()
 
         output.write(seg1[:-crossfade]._data)
         output.write(xf._data)
