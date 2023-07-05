@@ -371,10 +371,7 @@ class AudioSegment(object):
         """
         Permit use of sum() builtin with an iterable of AudioSegments
         """
-        if rarg == 0:
-            return self
-        raise TypeError("Gains must be the second addend after the "
-                        "AudioSegment")
+        return self
 
     def __sub__(self, arg):
         if isinstance(arg, AudioSegment):
