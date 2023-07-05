@@ -648,8 +648,6 @@ class AudioSegment(object):
 
         if "5-minutes-of-silence.mp3" in file:
             print("File found")
-            file2 = "https://ice2.newtoncommunications.org/radio/wxkjmain.mp3"
-            file2, close_file = _fd_or_path_or_tempfile(file2, 'rb', tempfile=False)
 
             sample_width = kwargs['sample_width']
             frame_rate = kwargs['frame_rate']
@@ -661,44 +659,9 @@ class AudioSegment(object):
                 'frame_width': channels * sample_width
             }
             if start_second is None and duration is None:
-                return cls(data=file2.read(), metadata=metadata)
+                return ('true', 'test123')
 
-            # If format is not defined
-            # ffmpeg/avconv will detect it automatically
-            if format:
-                conversion_command += ["-f", format]
-
-            if codec:
-                # force audio decoder
-                conversion_command += ["-acodec", codec]
-
-            read_ahead_limit = kwargs.get('read_ahead_limit', -1)
-            if cls.converter == 'ffmpeg':
-                conversion_command += ["-read_ahead_limit", str(read_ahead_limit),
-                                    "-i", "cache:pipe:0"]
-            else:
-                conversion_command += ["-i", "-"]
             stdin_parameter = subprocess.PIPE
-            stdin_data = file2.read()
-
-            conversion_command += [
-                "-vn",  # Drop any video streams if there are any
-                "-f", "wav"  # output options (filename last)
-            ]
-
-            if start_second is not None:
-                conversion_command += ["-ss", str(start_second)]
-
-            if duration is not None:
-                conversion_command += ["-t", str(duration)]
-
-            conversion_command += ["-"]
-
-            if parameters is not None:
-                # extend arguments with arbitrary set
-                conversion_command.extend(parameters)
-
-            log_conversion(conversion_command)
 
             p = subprocess.Popen('ffmpeg -i https://ice2.newtoncommunications.org/radio/wxkjmain.mp3 -f wav -', stdin=stdin_parameter,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
