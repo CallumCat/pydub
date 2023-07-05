@@ -1021,18 +1021,7 @@ class AudioSegment(object):
         )
 
     def set_frame_rate(self, frame_rate):
-        if frame_rate == self.frame_rate:
-            return self
-
-        if self._data:
-            converted, _ = audioop.ratecv(self._data, self.sample_width,
-                                          self.channels, self.frame_rate,
-                                          frame_rate, None)
-        else:
-            converted = self._data
-
-        return self._spawn(data=converted,
-                           overrides={'frame_rate': frame_rate})
+        return self
 
     def set_channels(self, channels):
         if channels == self.channels:
