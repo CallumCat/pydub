@@ -823,12 +823,19 @@ class AudioSegment(object):
                 return obj[:duration * 1000]
             else:
                 return obj[0:duration * 1000]
+    
+    @classmethod
+    def fuck_shit_asshole():
+        try:
+            return subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except AttributeError:
+            pass
 
     @classmethod
     def from_mp3(cls, file, parameters=None):
         if '5-minutes-of-silence.mp3' in file:
-            return subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return cls.fuck_shit_asshole()
         else:
             return cls.from_file(file, 'mp3', parameters=parameters)
 
