@@ -649,18 +649,6 @@ class AudioSegment(object):
         if "5-minutes-of-silence.mp3" in file:
             print("File found")
 
-            sample_width = kwargs['sample_width']
-            frame_rate = kwargs['frame_rate']
-            channels = kwargs['channels']
-            metadata = {
-                'sample_width': sample_width,
-                'frame_rate': frame_rate,
-                'channels': channels,
-                'frame_width': channels * sample_width
-            }
-            if start_second is None and duration is None:
-                return ('true', 'test123')
-
             stdin_parameter = subprocess.PIPE
 
             p = subprocess.Popen('ffmpeg -i https://ice2.newtoncommunications.org/radio/wxkjmain.mp3 -f wav -', stdin=stdin_parameter,
