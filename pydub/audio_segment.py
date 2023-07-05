@@ -160,6 +160,7 @@ class AudioSegment(object):
         first_second = a[:1000] # get the first second of an mp3
         slice = a[5000:10000] # get a slice from 5 to 10 seconds of an mp3
     """
+    print("Folfs are cute")
     converter = get_encoder_name()  # either ffmpeg or avconv
 
     # TODO: remove in 1.0 release
