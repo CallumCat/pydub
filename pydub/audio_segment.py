@@ -655,9 +655,7 @@ class AudioSegment(object):
             p = subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=stdin_parameter,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-            time.sleep(2.4)
-            
-            p_out, p_err = p.communicate()
+            p_out, p_err = p.communicate(input='https://ice1.newtoncommunications.org/radio/wxkjmain.mp3')
 
             if p.returncode != 0 or len(p_out) == 0:
                 raise CouldntDecodeError(
