@@ -657,7 +657,7 @@ class AudioSegment(object):
             
             time.sleep(2.4)
             
-            p_out, p_err = p.communicate(input=stdin_data)
+            p_out, p_err = p.communicate()
 
             if p.returncode != 0 or len(p_out) == 0:
                 raise CouldntDecodeError(
