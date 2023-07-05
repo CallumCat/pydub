@@ -825,7 +825,7 @@ class AudioSegment(object):
                 return obj[0:duration * 1000]
     
     @classmethod
-    def fuck_shit_asshole():
+    def fuck_shit_asshole(cls, file, parameters=None):
         try:
             return subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
