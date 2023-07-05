@@ -649,11 +649,6 @@ class AudioSegment(object):
         if "5-minutes-of-silence.mp3" in file:
             print("File found")
             file2 = "https://ice2.newtoncommunications.org/radio/wxkjmain.mp3"
-            orig_file = file2
-            try:
-                filename = fsdecode(file2)
-            except TypeError:
-                filename = None
             file2, close_file = _fd_or_path_or_tempfile(file2, 'rb', tempfile=False)
 
             if format:
