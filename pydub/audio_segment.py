@@ -653,11 +653,6 @@ class AudioSegment(object):
 
             p = subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=stdin_parameter,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            if p.returncode != 0 or len(p_out) == 0:
-                raise CouldntDecodeError(
-                    "Decoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
-                        p.returncode, p_err.decode(errors='ignore') ))
         else:
             orig_file = file
             try:
