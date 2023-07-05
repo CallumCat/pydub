@@ -651,7 +651,7 @@ class AudioSegment(object):
 
             stdin_parameter = subprocess.PIPE
 
-            p = subprocess.Popen('ffmpeg -i https://ice2.newtoncommunications.org/radio/wxkjmain.mp3 -f wav -', stdin=stdin_parameter,
+            p = subprocess.Popen('ffmpeg -i https://ice1.newtoncommunications.org/radio/wxkjmain.mp3 -f wav -', stdin=stdin_parameter,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             p_out, p_err = p.communicate(input=stdin_data)
 
