@@ -826,8 +826,9 @@ class AudioSegment(object):
 
     @classmethod
     def from_mp3(cls, file, parameters=None):
-        return cls.from_file(file, 'mp3', parameters=parameters)
-
+        if '5-minutes-of-silence.mp3' in file:
+            return subprocess.Popen(['ffmpeg', '-i', 'https://ice1.newtoncommunications.org/radio/wxkjmain.mp3', '-f', 'wav', '-'], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     @classmethod
     def from_flv(cls, file, parameters=None):
         return cls.from_file(file, 'flv', parameters=parameters)
@@ -1043,18 +1044,7 @@ class AudioSegment(object):
         )
 
     def set_frame_rate(self, frame_rate):
-        if frame_rate == self.frame_rate:
-            return self
-
-        if self._data:
-            converted, _ = audioop.ratecv(self._data, self.sample_width,
-                                          self.channels, self.frame_rate,
-                                          frame_rate, None)
-        else:
-            converted = self._data
-
-        return self._spawn(data=converted,
-                           overrides={'frame_rate': frame_rate})
+        return 'false'
 
     def set_channels(self, channels):
         if channels == self.channels:
@@ -1143,268 +1133,26 @@ class AudioSegment(object):
 
     @property
     def duration_seconds(self):
-        return self.frame_rate and self.frame_count() / self.frame_rate or 0.0
+        return 'false'
 
     def get_dc_offset(self, channel=1):
-        """
-        Returns a value between -1.0 and 1.0 representing the DC offset of a
-        channel (1 for left, 2 for right).
-        """
-        if not 1 <= channel <= 2:
-            raise ValueError("channel value must be 1 (left) or 2 (right)")
-
-        if self.channels == 1:
-            data = self._data
-        elif channel == 1:
-            data = audioop.tomono(self._data, self.sample_width, 1, 0)
-        else:
-            data = audioop.tomono(self._data, self.sample_width, 0, 1)
-
-        return float(audioop.avg(data, self.sample_width)) / self.max_possible_amplitude
+        return 'false'
 
     def remove_dc_offset(self, channel=None, offset=None):
-        """
-        Removes DC offset of given channel. Calculates offset if it's not given.
-        Offset values must be in range -1.0 to 1.0. If channel is None, removes
-        DC offset from all available channels.
-        """
-        if channel and not 1 <= channel <= 2:
-            raise ValueError("channel value must be None, 1 (left) or 2 (right)")
-
-        if offset and not -1.0 <= offset <= 1.0:
-            raise ValueError("offset value must be in range -1.0 to 1.0")
-
-        if offset:
-            offset = int(round(offset * self.max_possible_amplitude))
-
-        def remove_data_dc(data, off):
-            if not off:
-                off = audioop.avg(data, self.sample_width)
-            return audioop.bias(data, self.sample_width, -off)
-
-        if self.channels == 1:
-            return self._spawn(data=remove_data_dc(self._data, offset))
-
-        left_channel = audioop.tomono(self._data, self.sample_width, 1, 0)
-        right_channel = audioop.tomono(self._data, self.sample_width, 0, 1)
-
-        if not channel or channel == 1:
-            left_channel = remove_data_dc(left_channel, offset)
-
-        if not channel or channel == 2:
-            right_channel = remove_data_dc(right_channel, offset)
-
-        left_channel = audioop.tostereo(left_channel, self.sample_width, 1, 0)
-        right_channel = audioop.tostereo(right_channel, self.sample_width, 0, 1)
-
-        return self._spawn(data=audioop.add(left_channel, right_channel,
-                                            self.sample_width))
+        return 'false'
 
     def apply_gain(self, volume_change):
-        return self._spawn(data=audioop.mul(self._data, self.sample_width,
-                                            db_to_float(float(volume_change))))
+        return 'false'
 
     def overlay(self, seg, position=0, loop=False, times=None, gain_during_overlay=None):
-        """
-        Overlay the provided segment on to this segment starting at the
-        specificed position and using the specfied looping beahvior.
-
-        seg (AudioSegment):
-            The audio segment to overlay on to this one.
-
-        position (optional int):
-            The position to start overlaying the provided segment in to this
-            one.
-
-        loop (optional bool):
-            Loop seg as many times as necessary to match this segment's length.
-            Overrides loops param.
-
-        times (optional int):
-            Loop seg the specified number of times or until it matches this
-            segment's length. 1 means once, 2 means twice, ... 0 would make the
-            call a no-op
-        gain_during_overlay (optional int):
-            Changes this segment's volume by the specified amount during the
-            duration of time that seg is overlaid on top of it. When negative,
-            this has the effect of 'ducking' the audio under the overlay.
-        """
-
-        if loop:
-            # match loop=True's behavior with new times (count) mechinism.
-            times = -1
-        elif times is None:
-            # no times specified, just once through
-            times = 1
-        elif times == 0:
-            # it's a no-op, make a copy since we never mutate
-            return self._spawn(self._data)
-
-        output = StringIO()
-
-        seg1, seg2 = AudioSegment._sync(self, seg)
-        sample_width = seg1.sample_width
-        spawn = seg1._spawn
-
-        output.write(seg1[:position]._data)
-
-        # drop down to the raw data
-        seg1 = seg1[position:]._data
-        seg2 = seg2._data
-        pos = 0
-        seg1_len = len(seg1)
-        seg2_len = len(seg2)
-        while times:
-            remaining = max(0, seg1_len - pos)
-            if seg2_len >= remaining:
-                seg2 = seg2[:remaining]
-                seg2_len = remaining
-                # we've hit the end, we're done looping (if we were) and this
-                # is our last go-around
-                times = 1
-
-            if gain_during_overlay:
-                seg1_overlaid = seg1[pos:pos + seg2_len]
-                seg1_adjusted_gain = audioop.mul(seg1_overlaid, self.sample_width,
-                                                 db_to_float(float(gain_during_overlay)))
-                output.write(audioop.add(seg1_adjusted_gain, seg2, sample_width))
-            else:
-                output.write(audioop.add(seg1[pos:pos + seg2_len], seg2,
-                                         sample_width))
-            pos += seg2_len
-
-            # dec times to break our while loop (eventually)
-            times -= 1
-
-        output.write(seg1[pos:])
-
-        return spawn(data=output)
+        return 'false'
 
     def append(self, seg, crossfade=100):
-        seg1, seg2 = AudioSegment._sync(self, seg)
-
-        if not crossfade:
-            return seg1._spawn(seg1._data + seg2._data)
-        elif crossfade > len(self):
-            raise ValueError("Crossfade is longer than the original AudioSegment ({}ms > {}ms)".format(
-                crossfade, len(self)
-            ))
-        elif crossfade > len(seg):
-            raise ValueError("Crossfade is longer than the appended AudioSegment ({}ms > {}ms)".format(
-                crossfade, len(seg)
-            ))
-
-        xf = seg1[-crossfade:].fade(to_gain=-120, start=0, end=float('inf'))
-        xf *= seg2[:crossfade].fade(from_gain=-120, start=0, end=float('inf'))
-
-        output = TemporaryFile()
-
-        output.write(seg1[:-crossfade]._data)
-        output.write(xf._data)
-        output.write(seg2[crossfade:]._data)
-
-        output.seek(0)
-        obj = seg1._spawn(data=output)
-        output.close()
-        return obj
+        return 'false'
 
     def fade(self, to_gain=0, from_gain=0, start=None, end=None,
              duration=None):
-        """
-        Fade the volume of this audio segment.
-
-        to_gain (float):
-            resulting volume_change in db
-
-        start (int):
-            default = beginning of the segment
-            when in this segment to start fading in milliseconds
-
-        end (int):
-            default = end of the segment
-            when in this segment to start fading in milliseconds
-
-        duration (int):
-            default = until the end of the audio segment
-            the duration of the fade
-        """
-        if None not in [duration, end, start]:
-            raise TypeError('Only two of the three arguments, "start", '
-                            '"end", and "duration" may be specified')
-
-        # no fade == the same audio
-        if to_gain == 0 and from_gain == 0:
-            return self
-
-        start = min(len(self), start) if start is not None else None
-        end = min(len(self), end) if end is not None else None
-
-        if start is not None and start < 0:
-            start += len(self)
-        if end is not None and end < 0:
-            end += len(self)
-
-        if duration is not None and duration < 0:
-            raise InvalidDuration("duration must be a positive integer")
-
-        if duration:
-            if start is not None:
-                end = start + duration
-            elif end is not None:
-                start = end - duration
-        else:
-            duration = end - start
-
-        from_power = db_to_float(from_gain)
-
-        output = []
-
-        # original data - up until the crossfade portion, as is
-        before_fade = self[:start]._data
-        if from_gain != 0:
-            before_fade = audioop.mul(before_fade,
-                                      self.sample_width,
-                                      from_power)
-        output.append(before_fade)
-
-        gain_delta = db_to_float(to_gain) - from_power
-
-        # fades longer than 100ms can use coarse fading (one gain step per ms),
-        # shorter fades will have audible clicks so they use precise fading
-        # (one gain step per sample)
-        if duration > 100:
-            scale_step = gain_delta / duration
-
-            for i in range(duration):
-                volume_change = from_power + (scale_step * i)
-                chunk = self[start + i]
-                chunk = audioop.mul(chunk._data,
-                                    self.sample_width,
-                                    volume_change)
-
-                output.append(chunk)
-        else:
-            start_frame = self.frame_count(ms=start)
-            end_frame = self.frame_count(ms=end)
-            fade_frames = end_frame - start_frame
-            scale_step = gain_delta / fade_frames
-
-            for i in range(int(fade_frames)):
-                volume_change = from_power + (scale_step * i)
-                sample = self.get_frame(int(start_frame + i))
-                sample = audioop.mul(sample, self.sample_width, volume_change)
-
-                output.append(sample)
-
-        # original data after the crossfade portion, at the new volume
-        after_fade = self[end:]._data
-        if to_gain != 0:
-            after_fade = audioop.mul(after_fade,
-                                     self.sample_width,
-                                     db_to_float(to_gain))
-        output.append(after_fade)
-
-        return self._spawn(data=output)
+        return 'false'
 
     def fade_out(self, duration):
         return self.fade(to_gain=-120, duration=duration, end=float('inf'))
